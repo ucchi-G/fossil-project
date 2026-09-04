@@ -1,0 +1,354 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ディープラーニングとプログラミングを活用した化石同定システムの研究開発 | fossil博士</title>
+  <style>
+    :root {
+      --primary-dark: #0f2b48;
+      --primary-blue: #0066cc;
+      --accent-cyan: #00d2ff;
+      --card-bg: rgba(255, 255, 255, 0.92); /* 背景画像がうっすら透ける高級感のある白 */
+      --text-main: #1a2530;
+      --text-sub: #5a6e7f;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", sans-serif;
+      color: var(--text-main);
+      line-height: 1.7;
+      min-height: 100vh;
+      position: relative;
+      background-color: #0c1e30; /* 画像読み込み前のベース色 */
+    }
+
+    /* 固定背景（ホタテ画像 ＋ トーンダウン用オーバーレイ） */
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      
+      /* bg-hotate.jpg の画像を薄い青のグラデーションと合成 */
+      background: 
+        linear-gradient(135deg, rgba(15, 43, 72, 0.88), rgba(0, 51, 102, 0.82)),
+        url('bg-hotate.jpg') center/cover no-repeat;
+      
+      /* スクロールしても背景画像を固定 */
+      background-attachment: fixed;
+    }
+
+    /* ヒーローヘッダー */
+    header {
+      padding: 90px 20px 70px;
+      text-align: center;
+      position: relative;
+      color: white;
+    }
+
+    .header-tag {
+      display: inline-block;
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      color: var(--accent-cyan);
+      font-weight: 600;
+      font-size: 0.85rem;
+      padding: 6px 18px;
+      border-radius: 20px;
+      border: 1px solid rgba(0, 210, 255, 0.4);
+      margin-bottom: 20px;
+      letter-spacing: 1px;
+    }
+
+    header h1 {
+      font-size: 2.2rem;
+      font-weight: 800;
+      line-height: 1.35;
+      max-width: 900px;
+      margin: 0 auto 15px;
+      text-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    }
+
+    header p {
+      font-size: 1.15rem;
+      color: #d0e6ff;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.4);
+    }
+
+    /* メインコンテナ */
+    .container {
+      max-width: 960px;
+      margin: 0 auto 60px;
+      padding: 0 20px;
+      position: relative;
+      z-index: 10;
+    }
+
+    section {
+      background: var(--card-bg);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border-radius: 16px;
+      padding: 40px;
+      margin-bottom: 30px;
+      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.6);
+    }
+
+    h2 {
+      color: var(--primary-dark);
+      font-size: 1.5rem;
+      margin-bottom: 25px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    h2::before {
+      content: '';
+      display: inline-block;
+      width: 6px;
+      height: 24px;
+      background: linear-gradient(to bottom, var(--accent-cyan), var(--primary-blue));
+      border-radius: 3px;
+    }
+
+    /* 画像ギャラリー */
+    .fossil-gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 20px;
+      margin-top: 20px;
+    }
+
+    .fossil-item {
+      background: #ffffff;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid #e2e8f0;
+      transition: transform 0.2s ease;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+    }
+
+    .fossil-item:hover {
+      transform: translateY(-3px);
+    }
+
+    .fossil-img {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+      background-color: #cbd5e1;
+      display: block;
+    }
+
+    .fossil-info {
+      padding: 15px;
+    }
+
+    .fossil-title {
+      font-weight: bold;
+      font-size: 0.95rem;
+      color: var(--primary-dark);
+    }
+
+    .fossil-sub {
+      font-size: 0.8rem;
+      color: var(--text-sub);
+      font-style: italic;
+    }
+
+    /* システム紹介カード */
+    .system-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 24px;
+    }
+
+    .system-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 28px;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .system-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 12px 25px rgba(0, 102, 204, 0.15);
+      border-color: var(--primary-blue);
+    }
+
+    .badge {
+      display: inline-block;
+      background: var(--primary-blue);
+      color: white;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 6px;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+    }
+
+    .system-card h3 {
+      font-size: 1.3rem;
+      color: var(--primary-dark);
+      margin-bottom: 12px;
+    }
+
+    /* タイムライン */
+    .timeline {
+      list-style: none;
+      position: relative;
+      padding-left: 20px;
+    }
+
+    .timeline::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 10px;
+      bottom: 10px;
+      width: 2px;
+      background: #cbd5e1;
+    }
+
+    .timeline-item {
+      position: relative;
+      margin-bottom: 24px;
+      padding-left: 15px;
+    }
+
+    .timeline-item::before {
+      content: '';
+      position: absolute;
+      left: -21px;
+      top: 8px;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--primary-blue);
+      box-shadow: 0 0 0 4px #e0f2fe;
+    }
+
+    .timeline-date {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--primary-blue);
+    }
+
+    footer {
+      text-align: center;
+      padding: 40px 20px;
+      color: #b0c4de;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <span class="header-tag">AI × EARTH SCIENCE RESEARCH</span>
+    <h1>ディープラーニングとプログラミングを活用した<br>化石同定システムの研究開発</h1>
+    <p>子どもたちに地学の面白さを届けるAI同定プロジェクト</p>
+  </header>
+
+  <div class="container">
+
+    <!-- 公開の目的 -->
+    <section>
+      <h2>公開の目的</h2>
+      <p>山形県寒河江市上野の寒河江川河床（後期中新世・本郷層）は、凝灰質礫岩が露出し、豊富な軟体動物化石が観察できる貴重な地学学習の場です。</p>
+      <p>現地で化石採集をしていた際、偶然居合わせた子どもたちに化石の種を教えたことをきっかけに、地学への深い興味を持ってもらえることを実感しました。化石の「種」をその場で判別できる仕組みを提供し、単なる採集にとどまらず、日本および世界中の子どもたちが地学の面白さに触れるきっかけを作ることを目指しています。</p>
+    </section>
+
+    <!-- 学習対象化石・画像エリア -->
+    <section>
+      <h2>学習対象となる主な化石</h2>
+      <p>AIモデルの精度向上に向け、多様な状態の化石画像を多角的に撮影して学習データを作成しています。</p>
+      
+      <div class="fossil-gallery">
+        <div class="fossil-item">
+          <!-- hotate.jpg という画像を準備して同じフォルダに配置してください -->
+          <img src="hotate.jpg" alt="Mizuhopecten matumoriensis" class="fossil-img" onerror="this.src='https://via.placeholder.com/400x300?text=Hotate+Fossil+Image'">
+          <div class="fossil-info">
+            <div class="fossil-title">ホタテガイ類（優占種）</div>
+            <div class="fossil-sub">Mizuhopecten matumoriensis (Nakamura)</div>
+          </div>
+        </div>
+        <div class="fossil-item">
+          <img src="fossil2.jpg" alt="化石サンプル" class="fossil-img" onerror="this.src='https://via.placeholder.com/400x300?text=Fossil+Sample+Image'">
+          <div class="fossil-info">
+            <div class="fossil-title">本郷層 産出化石</div>
+            <div class="fossil-sub">割れ・礫付着個体の学習データ</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- システム内容 -->
+    <section>
+      <h2>システム構成</h2>
+      <div class="system-grid">
+        <div class="system-card">
+          <span class="badge">Scratch</span>
+          <h3>fossil博士1号</h3>
+          <p>操作の直感性と親しみやすさを重視。破損の少ない個体を対象に、小学生でもロジックを理解しやすいフローチャート形式で判定する同定システムです。</p>
+        </div>
+        <div class="system-card">
+          <span class="badge">Teachable Machine</span>
+          <h3>fossil博士2号</h3>
+          <p>優占種 <em>Mizuhopecten matumoriensis</em> の約4,000枚を含む、合計8,000枚規模の画像データでディープラーニング。割れや未クリーニングで礫が付着した実用状態の化石でも高精度に同定します。</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 研究開発の流れ -->
+    <section>
+      <h2>研究・開発の流れ</h2>
+      <ul class="timeline">
+        <li class="timeline-item">
+          <div class="timeline-date">小学1〜2年生</div>
+          <div>浜辺でオウムガイの化石を拾い、博物館で鑑定を受けた体験から化石への興味が芽生える。</div>
+        </li>
+        <li class="timeline-item">
+          <div class="timeline-date">小学5年生</div>
+          <div>プログラミング教室に通い始め、Scratchを中心に開発スキルを磨く。</div>
+        </li>
+        <li class="timeline-item">
+          <div class="timeline-date">中学3年生</div>
+          <div>寒河江川での野外体験を原点に「ディープラーニングとプログラミングを活用した化石同定システムの研究開発」を発表。</div>
+        </li>
+        <li class="timeline-item">
+          <div class="timeline-date">現在（高校1年生）</div>
+          <div>GitHub Pagesでの一般公開およびシステムモデルの更なる精度向上を推進中。</div>
+        </li>
+      </ul>
+    </section>
+
+    <!-- お知らせ -->
+    <section>
+      <h2>お知らせ</h2>
+      <p>システムの実証実験および Scratch / Teachable Machine の体験・公開リンクは順次本ページにてアップデート予定です。</p>
+    </section>
+
+  </div>
+
+  <footer>
+    <p>&copy; 2026 fossil博士プロジェクト All Rights Reserved.</p>
+  </footer>
+
+</body>
+</html>
