@@ -332,6 +332,9 @@
           <h3>fossil博士2号</h3>
           <p>優占種 <em>Mizuhopecten matumoriensis</em> の約4,000枚を含む、合計8,000枚規模の画像データでディープラーニング。割れや未クリーニングで礫が付着した実用状態の化石でも高精度に同定します。</p>
         <button type="button" onclick="init()">Start</button>
+          <div id="status-message">
+  ボタンを押すとカメラを使ったAI判定を開始します。
+</div>
           <div id="webcam-container"></div>
 <div id="label-container"></div>
         </div>
@@ -386,6 +389,14 @@
 
     // Load the image model and setup the webcam
     async function init() {
+
+          const startButton = document.getElementById("start-button");
+          const statusMessage = document.getElementById("status-message");
+
+          startButton.disabled = true;
+          startButton.textContent = "起動中...";
+          statusMessage.textContent =
+        "AIモデルを読み込んでいます。数秒お待ちください。";
         const modelURL = URL + "model.json";
         const metadataURL = URL + "metadata.json";
 
@@ -396,6 +407,9 @@
         model = await tmImage.load(modelURL, metadataURL);
         maxPredictions = model.getTotalClasses();
 
+      　statusMessage.textContent =
+        "カメラの使用を許可してください。";
+      
         // Convenience function to setup a webcam
         const flip = true; // whether to flip the webcam
         webcam = new tmImage.Webcam(200, 200, flip); // width, height, flip
@@ -406,10 +420,15 @@
         // append elements to the DOM
         document.getElementById("webcam-container").appendChild(webcam.canvas);
         labelContainer = document.getElementById("label-container");
+      
         for (let i = 0; i < maxPredictions; i++) { // and class labels
             labelContainer.appendChild(document.createElement("div"));
         }
+        startButton.textContent = "AI判定中";
+         statusMessage.textContent =
+        "カメラを起動しました。化石をカメラに映してください。";
     }
+  　
 
     async function loop() {
         webcam.update(); // update the webcam frame
